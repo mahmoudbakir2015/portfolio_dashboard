@@ -226,4 +226,5 @@ class SupabaseService {
       rethrow;
     }
   }
+  // حمل بيانات المستخدم
 }
