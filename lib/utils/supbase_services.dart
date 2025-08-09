@@ -11,13 +11,14 @@ class SupabaseService {
   void initSupabase() {
     _client = SupabaseClient(
       supabaseUrl, // Project URL من الصورة
-      anonKey,
-    ); // Anon Key من الصورة);
+      anonKey, // Anon Key من الصورة
+    );
   }
 
   SupabaseClient get client => _client;
 
   // حفظ بيانات المستخدم
+  // حفظ بيانات المستخدم - طريقة بديلة
   Future<void> saveUserData({
     required String name,
     required String profession,
@@ -27,14 +28,40 @@ class SupabaseService {
     required String location,
   }) async {
     try {
-      await _client.from('portfolio_data').upsert({
-        'name': name,
-        'profession': profession,
-        'bio': bio,
-        'email': email,
-        'phone': phone,
-        'location': location,
-      });
+      // أولاً، حاول البحث عن السجل الحالي
+      final existingData = await _client
+          .from('portfolio_data')
+          .select('id')
+          .limit(1);
+
+      if (existingData.isNotEmpty && existingData[0].containsKey('id')) {
+        // إذا كان هناك سجل، قم بالتحديث
+        final id = existingData[0]['id'];
+        await _client
+            .from('portfolio_data')
+            .update({
+              'name': name,
+              'profession': profession,
+              'bio': bio,
+              'email': email,
+              'phone': phone,
+              'location': location,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', id);
+      } else {
+        // إذا لم يكن هناك سجل، أضف سجل جديد
+        await _client.from('portfolio_data').insert({
+          'name': name,
+          'profession': profession,
+          'bio': bio,
+          'email': email,
+          'phone': phone,
+          'location': location,
+        });
+      }
+
+      print('User data saved successfully');
     } catch (e) {
       print('Error saving user data: $e');
       rethrow;

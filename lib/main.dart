@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:portfolio_dashboard/dashboard.dart';
-import 'package:portfolio_dashboard/supbase_services.dart';
+import 'package:portfolio_dashboard/screens/dashboard.dart';
+import 'package:portfolio_dashboard/utils/supbase_services.dart';
 
 void main() {
   // Initialize Supabase
