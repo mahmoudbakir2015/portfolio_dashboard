@@ -1,5 +1,6 @@
 import 'package:portfolio_dashboard/const/private_string.dart';
 import 'package:supabase/supabase.dart';
+import 'dart:io';
 
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
@@ -17,8 +18,7 @@ class SupabaseService {
 
   SupabaseClient get client => _client;
 
-  // حفظ بيانات المستخدم
-  // حفظ بيانات المستخدم - طريقة بديلة
+  // حفظ بيانات المستخدم مع صورة
   Future<void> saveUserData({
     required String name,
     required String profession,
@@ -26,8 +26,15 @@ class SupabaseService {
     required String email,
     required String phone,
     required String location,
+    File? profileImage, // إضافة صورة الملف الشخصي
   }) async {
     try {
+      // إذا كانت هناك صورة، قم برفعها إلى Supabase Storage
+      String? imageUrl;
+      if (profileImage != null) {
+        imageUrl = await _uploadImage(profileImage, 'profile-images/');
+      }
+
       // أولاً، حاول البحث عن السجل الحالي
       final existingData = await _client
           .from('portfolio_data')
@@ -46,6 +53,7 @@ class SupabaseService {
               'email': email,
               'phone': phone,
               'location': location,
+              'profile_image_url': imageUrl, // حفظ مسار الصورة
               'updated_at': DateTime.now().toIso8601String(),
             })
             .eq('id', id);
@@ -58,13 +66,54 @@ class SupabaseService {
           'email': email,
           'phone': phone,
           'location': location,
+          'profile_image_url': imageUrl, // حفظ مسار الصورة
         });
       }
 
       print('User data saved successfully');
     } catch (e) {
-      print('Error saving user data: $e');
+      print('Error saving user  $e');
       rethrow;
+    }
+  }
+
+  // رفع الصورة إلى Supabase Storage
+  Future<String?> _uploadImage(File imageFile, String folder) async {
+    try {
+      // تحديد اسم الملف
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+
+      print('Uploading file: $fileName to bucket: profile-images');
+
+      // رفع الملف إلى Supabase Storage
+      final response = await _client.storage
+          .from('profile-images')
+          .upload(
+            '$folder$fileName',
+            imageFile,
+            fileOptions: FileOptions(
+              contentType: 'image/jpeg',
+              cacheControl: '3600', // تخزين مؤقت لمدة ساعة
+            ),
+          );
+
+      print('Upload response: $response');
+
+      // التحقق من النجاح
+      if (response != null) {
+        // الحصول على URL العام للصورة
+        final publicUrl = _client.storage
+            .from('profile-images')
+            .getPublicUrl('$folder$fileName');
+        print('Public URL: $publicUrl');
+        return publicUrl;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
     }
   }
 
@@ -153,7 +202,7 @@ class SupabaseService {
       }
       return null;
     } catch (e) {
-      print('Error fetching user data: $e');
+      print('Error fetching user  $e');
       return null;
     }
   }

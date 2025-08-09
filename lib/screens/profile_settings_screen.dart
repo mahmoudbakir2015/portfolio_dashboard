@@ -25,6 +25,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   late String _userImage;
   final SupabaseService supabaseService = SupabaseService();
   XFile? _pickedImage;
+  File? _selectedImageFile;
 
   @override
   void initState() {
@@ -53,7 +54,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       final String phone = _phoneController.text.trim();
       final String location = _locationController.text.trim();
 
-      // تحديث البيانات في Supabase باستخدام upsert
+      // إرسال البيانات مع الصورة إذا تم اختيارها
       await supabaseService.saveUserData(
         name: name,
         profession: profession,
@@ -61,6 +62,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         email: email,
         phone: phone,
         location: location,
+        profileImage: _selectedImageFile, // إرسال الصورة
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -139,6 +141,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       setState(() {
         _pickedImage = image;
         _userImage = image.path;
+        _selectedImageFile = File(image.path); // حفظ الملف للاستخدام لاحقاً
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image selected from gallery!')),
@@ -158,6 +161,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       setState(() {
         _pickedImage = image;
         _userImage = image.path;
+        _selectedImageFile = File(image.path); // حفظ الملف للاستخدام لاحقاً
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Photo taken successfully!')),
