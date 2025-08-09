@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio_dashboard/utils/supbase_services.dart'
     show SupabaseService;
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -21,6 +24,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   late String _userImage;
   final SupabaseService supabaseService = SupabaseService();
+  XFile? _pickedImage;
 
   @override
   void initState() {
@@ -69,6 +73,98 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
+  // دالة لاختيار الصورة من المعرض أو الكاميرا
+  Future<void> _pickImageWithOptions() async {
+    try {
+      // طلب الإذن
+      await _requestPermissions();
+
+      // عرض نافذة اختيار
+      await showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickImageFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera),
+                  title: const Text('Take Photo'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickImageFromCamera();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error picking image: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
+    }
+  }
+
+  // طلب الأذونات
+  Future<void> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      await Permission.storage.request();
+      await Permission.camera.request();
+    } else if (Platform.isIOS) {
+      await Permission.photos.request();
+      await Permission.camera.request();
+    }
+  }
+
+  // اختيار من المعرض
+  Future<void> _pickImageFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
+
+    if (image != null) {
+      setState(() {
+        _pickedImage = image;
+        _userImage = image.path;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image selected from gallery!')),
+      );
+    }
+  }
+
+  // اختيار من الكاميرا
+  Future<void> _pickImageFromCamera() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 50,
+    );
+
+    if (image != null) {
+      setState(() {
+        _pickedImage = image;
+        _userImage = image.path;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo taken successfully!')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -109,19 +205,26 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.blue, width: 3),
             ),
-            child: ClipOval(child: Image.asset(_userImage, fit: BoxFit.cover)),
+            child: ClipOval(
+              child: _pickedImage != null
+                  ? Image.file(File(_pickedImage!.path), fit: BoxFit.cover)
+                  : Image.asset(_userImage, fit: BoxFit.cover),
+            ),
           ),
           Positioned(
             bottom: 0,
             right: 0,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.blue,
+            child: GestureDetector(
+              onTap: _pickImageWithOptions,
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.blue,
+                ),
+                child: const Icon(Icons.edit, color: Colors.white, size: 16),
               ),
-              child: const Icon(Icons.edit, color: Colors.white, size: 16),
             ),
           ),
         ],
