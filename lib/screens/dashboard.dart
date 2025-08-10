@@ -23,13 +23,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   late String _userEmail;
   late String _userPhone;
   late String _userLocation;
-  late String _userImage;
 
   // قائمة المشاريع
-  late List<Map<String, dynamic>> _projects;
 
   // قائمة المهارات
-  late List<String> _skills;
 
   // عرض القائمة
   int _selectedIndex = 0;
@@ -56,39 +53,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     _userEmail = 'mahmoudbakir2015@icloud.com';
     _userPhone = '+20 101 763 2363';
     _userLocation = 'Cairo, Egypt';
-    _userImage = 'assets/images/profile.jpg';
 
     // قائمة المشاريع الافتراضية
-    _projects = [
-      {
-        'id': 1,
-        'title': 'E-commerce App',
-        'description':
-            'Full-featured e-commerce application with payment integration',
-        'image': 'assets/images/project1.jpg',
-        'technologies': ['Flutter', 'Firebase', 'Stripe'],
-        'githubUrl': 'https://github.com/example/ecommerce    ',
-        'liveUrl': 'https://example.com/ecommerce    ',
-      },
-      {
-        'id': 2,
-        'title': 'Task Management App',
-        'description': 'Productivity app for managing tasks and projects',
-        'image': 'assets/images/project2.jpg',
-        'technologies': ['Flutter', 'Firestore', 'Provider'],
-        'githubUrl': 'https://github.com/example/taskmanager    ',
-        'liveUrl': 'https://example.com/taskmanager    ',
-      },
-    ];
 
     // قائمة المهارات الافتراضية
-    _skills = [
-      'Flutter',
-      'Dart',
-      'Firebase',
-      'UI/UX Design',
-      'Responsive Design',
-    ];
   }
 
   // جلب البيانات من Supabase
@@ -110,9 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       // جلب المشاريع
       final projects = await supabaseService.getProjects();
       if (projects.isNotEmpty) {
-        setState(() {
-          _projects = projects;
-        });
+        setState(() {});
       }
     } catch (e) {
       print('Error loading data from Supabase: $e');

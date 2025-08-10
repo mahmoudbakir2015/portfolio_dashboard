@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio_dashboard/utils/supbase_services.dart'
@@ -24,9 +26,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   // متغيرات جديدة لتحسين التحكم
   String _userImage = '';
-  bool _hasUserData = false;
   bool _isLoadingImage = false;
-  bool _isRefreshing = false;
   final SupabaseService supabaseService = SupabaseService();
   XFile? _pickedImage;
   File? _selectedImageFile;
@@ -58,11 +58,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       final profileImageUrl = userData['profile_image_url'];
       if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
         _userImage = profileImageUrl;
-        _hasUserData = true;
       } else {
         _userImage =
             'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-        _hasUserData = true;
       }
     } else {
       // إذا لم تكن هناك بيانات، تعيين القيم الافتراضية
@@ -74,15 +72,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _locationController.text = '';
       _userImage =
           'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-      _hasUserData = false;
     }
   }
 
   // دالة تحديث البيانات
   Future<void> _refreshData() async {
-    setState(() {
-      _isRefreshing = true;
-    });
+    setState(() {});
 
     try {
       // حاول الحصول على بيانات المستخدم من Supabase
@@ -101,11 +96,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         final profileImageUrl = userData['profile_image_url'];
         if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
           _userImage = profileImageUrl;
-          _hasUserData = true;
         } else {
           _userImage =
               'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-          _hasUserData = true;
         }
       } else {
         // إذا لم تكن هناك بيانات، تعيين القيم الافتراضية
@@ -117,7 +110,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _locationController.text = '';
         _userImage =
             'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-        _hasUserData = false;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,9 +120,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Error refreshing data: $e')));
     } finally {
-      setState(() {
-        _isRefreshing = false;
-      });
+      setState(() {});
     }
   }
 
