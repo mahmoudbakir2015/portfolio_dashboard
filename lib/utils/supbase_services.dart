@@ -226,5 +226,42 @@ class SupabaseService {
       rethrow;
     }
   }
+
   // حمل بيانات المستخدم
+  // حفظ المهارات (الحل النهائي المُثبت)
+  Future<void> saveSkills(List<String> skills) async {
+    try {
+      // حذف جميع المهارات القديمة أولاً
+      await _client
+          .from('skills')
+          .delete()
+          .neq('skill_name', ''); // حذف كل السجلات
+
+      // إضافة المهارات الجديدة فقط إذا كانت غير فارغة
+      if (skills.isNotEmpty) {
+        final skillsData = skills
+            .toSet() // للتأكد من عدم وجود تكرارات
+            .map((skill) => {'skill_name': skill})
+            .toList();
+
+        await _client.from('skills').insert(skillsData);
+      }
+
+      print('Skills saved successfully: $skills');
+    } catch (e) {
+      print('Error saving skills: $e');
+      rethrow;
+    }
+  }
+
+  // جلب المهارات
+  Future<List<String>> getSkills() async {
+    try {
+      final response = await _client.from('skills').select('skill_name');
+      return response.map((skill) => skill['skill_name'] as String).toList();
+    } catch (e) {
+      print('Error fetching skills: $e');
+      return [];
+    }
+  }
 }
