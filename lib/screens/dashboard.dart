@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:portfolio_dashboard/screens/contact_info_screen.dart';
-import 'package:portfolio_dashboard/screens/general_settings_screen.dart';
+
+import 'package:portfolio_dashboard/screens/language_screen.dart';
 import 'package:portfolio_dashboard/screens/profile_settings_screen.dart';
 import 'package:portfolio_dashboard/screens/projects_management_screen.dart';
 import 'package:portfolio_dashboard/screens/skills_management_screen.dart';
@@ -160,22 +160,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               Navigator.pop(context);
             },
           ),
+
           _buildDrawerItem(
-            icon: Icons.contact_page,
-            title: 'Contact Info',
+            icon: Icons.settings,
+            title: 'Languages',
             onTap: () {
               setState(() {
                 _selectedIndex = 3;
-              });
-              Navigator.pop(context);
-            },
-          ),
-          _buildDrawerItem(
-            icon: Icons.settings,
-            title: 'General Settings',
-            onTap: () {
-              setState(() {
-                _selectedIndex = 4;
               });
               Navigator.pop(context);
             },
@@ -206,9 +197,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 2:
         return const SkillsManagementScreen();
       case 3:
-        return const ContactInfoScreen();
-      case 4:
-        return const GeneralSettingsScreen();
+        return const SpokenLanguagesScreen();
+
       default:
         return const ProfileSettingsScreen();
     }
