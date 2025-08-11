@@ -1,3 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio_dashboard/utils/supbase_services.dart'
@@ -40,7 +44,7 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
         _skills = skills;
       });
     } catch (e) {
-      print('Error loading skills: $e');
+      log('Error loading skills: $e');
       // في حالة الخطأ، نستخدم البيانات الافتراضية
       setState(() {
         _skills = [

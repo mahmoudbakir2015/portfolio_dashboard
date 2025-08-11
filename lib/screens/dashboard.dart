@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -81,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         setState(() {});
       }
     } catch (e) {
-      print('Error loading data from Supabase: $e');
+      log('Error loading data from Supabase: $e');
     }
   }
 
@@ -103,14 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
       backgroundColor: Colors.blue,
       foregroundColor: Colors.white,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: () {
-            // هنا يمكنك إضافة خاصية تسجيل الخروج
-          },
-        ),
-      ],
+      centerTitle: true,
     );
   }
 

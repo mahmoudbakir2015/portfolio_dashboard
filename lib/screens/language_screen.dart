@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:portfolio_dashboard/utils/supbase_services.dart';
 
 class SpokenLanguagesScreen extends StatefulWidget {
   const SpokenLanguagesScreen({super.key});
@@ -9,29 +10,38 @@ class SpokenLanguagesScreen extends StatefulWidget {
 }
 
 class _SpokenLanguagesScreenState extends State<SpokenLanguagesScreen> {
-  final List<Map<String, dynamic>> _languages = [
-    {
-      'name': 'Arabic',
-      'proficiency': 100,
-      'icon': Icons.language,
-      'isSelected': true,
-    },
-    {
-      'name': 'English',
-      'proficiency': 85,
-      'icon': Icons.translate,
-      'isSelected': true,
-    },
-  ];
+  final SupabaseService _supabase = SupabaseService();
+  List<Map<String, dynamic>> _languages = [];
+  bool _isLoading = true;
 
   final _formKey = GlobalKey<FormState>();
   final _languageController = TextEditingController();
   double _selectedProficiency = 50;
 
   @override
+  void initState() {
+    super.initState();
+    _loadLanguages();
+  }
+
+  @override
   void dispose() {
     _languageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadLanguages() async {
+    try {
+      setState(() => _isLoading = true);
+      final languages = await _supabase.getSpokenLanguages();
+      setState(() {
+        _languages = languages;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showErrorSnackbar('Failed to load languages: $e');
+    }
   }
 
   @override
@@ -48,18 +58,20 @@ class _SpokenLanguagesScreenState extends State<SpokenLanguagesScreen> {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildAddLanguageCard(),
-              const SizedBox(height: 20),
-              _buildLanguagesList(),
-            ],
-          ),
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildAddLanguageCard(),
+                    const SizedBox(height: 20),
+                    _buildLanguagesList(),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
@@ -143,6 +155,10 @@ class _SpokenLanguagesScreenState extends State<SpokenLanguagesScreen> {
   }
 
   Widget _buildLanguagesList() {
+    if (_languages.isEmpty) {
+      return const Center(child: Text('No languages added yet'));
+    }
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -226,68 +242,101 @@ class _SpokenLanguagesScreenState extends State<SpokenLanguagesScreen> {
     );
   }
 
-  void _addLanguage() {
+  Future<void> _addLanguage() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _languages.add({
+      try {
+        setState(() => _isLoading = true);
+        final newLanguage = {
           'name': _languageController.text,
-          'proficiency': _selectedProficiency,
+          'proficiency': _selectedProficiency.toInt(), // تحويل إلى integer
           'icon': _getLanguageIcon(_languageController.text),
           'isSelected': true,
+        };
+
+        await _supabase.saveSpokenLanguages([..._languages, newLanguage]);
+
+        setState(() {
+          _languages.add(newLanguage);
+          _languageController.clear();
+          _selectedProficiency = 50;
+          _isLoading = false;
         });
-        _languageController.clear();
-        _selectedProficiency = 50;
-      });
+      } catch (e) {
+        setState(() => _isLoading = false);
+        _showErrorSnackbar('Failed to add language: $e');
+      }
     }
   }
 
-  void _deleteLanguage(int index) {
-    showDialog(
+  Future<void> _deleteLanguage(int index) async {
+    final languageName = _languages[index]['name'];
+
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Delete'),
-        content: Text('Delete ${_languages[index]['name']}?'),
+        content: Text('Delete $languageName?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('CANCEL'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _languages.removeAt(index);
-              });
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('DELETE', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      try {
+        setState(() => _isLoading = true);
+        _languages.removeAt(index);
+        await _supabase.saveSpokenLanguages(_languages);
+        setState(() => _isLoading = false);
+      } catch (e) {
+        setState(() => _isLoading = false);
+        _showErrorSnackbar('Failed to delete language: $e');
+      }
+    }
   }
 
-  void _deleteSelectedLanguages() {
-    showDialog(
+  Future<void> _deleteSelectedLanguages() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Delete'),
         content: const Text('Delete all selected languages?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('CANCEL'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _languages.removeWhere((lang) => lang['isSelected']);
-              });
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('DELETE', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
+    );
+
+    if (confirmed == true) {
+      try {
+        setState(() => _isLoading = true);
+        _languages.removeWhere((lang) => lang['isSelected']);
+        await _supabase.saveSpokenLanguages(_languages);
+        setState(() => _isLoading = false);
+      } catch (e) {
+        setState(() => _isLoading = false);
+        _showErrorSnackbar('Failed to delete languages: $e');
+      }
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 

@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:flutter/material.dart';
 import 'package:portfolio_dashboard/const/private_string.dart';
 import 'package:supabase/supabase.dart';
 import 'dart:io';
@@ -27,6 +30,30 @@ class SupabaseService {
     return _client;
   }
 
+  Future<void> _validateImage(File imageFile) async {
+    // التحقق من امتداد الملف
+    final ext = path.extension(imageFile.path).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].contains(ext)) {
+      throw Exception('Only JPG/JPEG/PNG images are allowed');
+    }
+
+    // التحقق من حجم الملف (أقل من 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (await imageFile.length() > maxSize) {
+      throw Exception('Image size must be less than 5MB');
+    }
+  }
+
+  Future<void> _deleteOldImage(String imageUrl) async {
+    try {
+      final path = imageUrl.split('/profile-images/').last;
+      await _client.storage.from('profile-images').remove([path]);
+    } catch (e) {
+      log('Warning: Could not delete old image: $e');
+      // يمكن تجاهل الخطأ هنا لأنه ليس حرجاً
+    }
+  }
+
   // --- User Data ---
   Future<void> saveUserData({
     required String name,
@@ -40,13 +67,22 @@ class SupabaseService {
     try {
       String? imageUrl;
       if (profileImage != null) {
+        // التحقق من حجم الصورة ونوعها قبل الرفع
+        await _validateImage(profileImage);
         imageUrl = await _uploadImage(profileImage, 'profile-images/');
       }
 
       final existingData = await _client
           .from('portfolio_data')
-          .select('id')
+          .select('id, profile_image_url')
           .limit(1);
+
+      // حذف الصورة القديمة إذا وجدت
+      if (profileImage != null &&
+          existingData.isNotEmpty &&
+          existingData[0]['profile_image_url'] != null) {
+        await _deleteOldImage(existingData[0]['profile_image_url'] as String);
+      }
 
       final data = {
         'name': name,
@@ -68,14 +104,21 @@ class SupabaseService {
         await _client.from('portfolio_data').insert(data);
       }
     } catch (e) {
-      throw Exception('Failed to save user data: $e');
+      log('Error saving user data: $e');
+      throw Exception('Failed to save user data: ${e.toString()}');
     }
   }
 
   Future<String?> _uploadImage(File imageFile, String folder) async {
     try {
-      final fileName =
-          '${DateTime.now().millisecondsSinceEpoch}_${path.basename(imageFile.path)}';
+      // تنظيف اسم الملف من الأحرف غير اللاتينية
+      final originalName = path.basename(imageFile.path);
+      final cleanedName = originalName.replaceAll(
+        RegExp(r'[^a-zA-Z0-9\-_.]'),
+        '_',
+      );
+
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_$cleanedName';
       final filePath = '$folder$fileName';
 
       await _client.storage
@@ -86,12 +129,86 @@ class SupabaseService {
             fileOptions: FileOptions(
               contentType: 'image/jpeg',
               cacheControl: '3600',
+              upsert: true,
             ),
           );
 
       return _client.storage.from('profile-images').getPublicUrl(filePath);
     } catch (e) {
-      throw Exception('Failed to upload image: $e');
+      log('Error uploading image: $e');
+      throw Exception('Failed to upload image: ${e.toString()}');
+    }
+  }
+
+  // --- Spoken Languages ---
+  Future<void> saveSpokenLanguages(List<Map<String, dynamic>> languages) async {
+    try {
+      // Delete all existing languages
+      await _client.from('spoken_languages').delete().neq('language_name', '');
+
+      if (languages.isNotEmpty) {
+        // Prepare data for insertion
+        final languagesData = languages
+            .map(
+              (lang) => {
+                'language_name': lang['name'],
+                'proficiency': lang['proficiency'] is double
+                    ? lang['proficiency'].toInt()
+                    : lang['proficiency'],
+                'is_selected': lang['isSelected'],
+                'created_at': DateTime.now().toIso8601String(),
+              },
+            )
+            .toList();
+
+        // Insert new languages
+        await _client.from('spoken_languages').insert(languagesData);
+      }
+    } catch (e) {
+      log('Error saving spoken languages: $e');
+      throw Exception('Failed to save spoken languages: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSpokenLanguages() async {
+    try {
+      final response = await _client
+          .from('spoken_languages')
+          .select('language_name, proficiency, is_selected')
+          .order('created_at', ascending: false);
+
+      return response
+          .map(
+            (lang) => {
+              'name': lang['language_name'] as String,
+              'proficiency': lang['proficiency'] as int,
+              'isSelected':
+                  (lang['is_selected'] as bool?) ??
+                  true, // معالجة القيم الفارغة
+              'icon': _getLanguageIcon(lang['language_name'] as String),
+            },
+          )
+          .toList();
+    } catch (e) {
+      log('Error fetching spoken languages: $e');
+      throw Exception('Failed to fetch spoken languages: $e');
+    }
+  }
+
+  IconData _getLanguageIcon(String languageName) {
+    switch (languageName.toLowerCase()) {
+      case 'arabic':
+        return Icons.language;
+      case 'english':
+        return Icons.translate;
+      case 'french':
+        return Icons.flag;
+      case 'spanish':
+        return Icons.flag_outlined;
+      case 'german':
+        return Icons.language_outlined;
+      default:
+        return Icons.language;
     }
   }
 
@@ -109,12 +226,10 @@ class SupabaseService {
       String? mainImageUrl;
       List<String> galleryUrls = [];
 
-      // رفع الصورة الرئيسية
       if (mainImage != null) {
         mainImageUrl = await _uploadImageToProjectBucket(mainImage, 'main');
       }
 
-      // رفع صور المعرض
       for (var image in galleryImages) {
         final url = await _uploadImageToProjectBucket(image, 'gallery');
         galleryUrls.add(url);
@@ -127,7 +242,7 @@ class SupabaseService {
         'github_url': githubUrl,
         'live_url': liveUrl,
         'main_image_url': mainImageUrl,
-        'gallery_image_urls': galleryUrls, // مصفوفة من الروابط
+        'gallery_image_urls': galleryUrls,
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -150,7 +265,6 @@ class SupabaseService {
     bool keepOldGallery = false,
   }) async {
     try {
-      // جلب البيانات الحالية
       final response = await _client
           .from('projects')
           .select('main_image_url, gallery_image_urls')
@@ -165,21 +279,19 @@ class SupabaseService {
         currentData['gallery_image_urls'] ?? [],
       );
 
-      // رفع صورة رئيسية جديدة إن وُجدت
       if (mainImage != null) {
         mainImageUrl = await _uploadImageToProjectBucket(mainImage, 'main');
       } else if (!keepOldMainImage) {
-        mainImageUrl = null; // مسح إذا لم يتم الاحتفاظ
+        mainImageUrl = null;
       }
 
-      // رفع صور معرض جديدة
       if (galleryImages.isNotEmpty) {
         for (var image in galleryImages) {
           final url = await _uploadImageToProjectBucket(image, 'gallery');
           galleryUrls.add(url);
         }
       } else if (!keepOldGallery) {
-        galleryUrls.clear(); // مسح كل الصور القديمة إذا لم يتم الاحتفاظ
+        galleryUrls.clear();
       }
 
       await _client

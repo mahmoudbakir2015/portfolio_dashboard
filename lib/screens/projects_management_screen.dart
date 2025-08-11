@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:developer';
 import 'dart:io';
 
@@ -55,9 +57,7 @@ class _ProjectsManagementScreenState extends State<ProjectsManagementScreen> {
           // إنشاء اسم ملف جديد باستخدام الوقت لتجنب التكرار وإزالة الأحرف غير الإنجليزية
           String newFileName =
               "img_${DateTime.now().millisecondsSinceEpoch}.jpg";
-          final newFile = await file.rename(
-            file.parent.path + '/' + newFileName,
-          );
+          final newFile = await file.rename('${file.parent.path}/$newFileName');
 
           setState(() {
             _mainImage = newFile;
@@ -87,7 +87,7 @@ class _ProjectsManagementScreenState extends State<ProjectsManagementScreen> {
             String newFileName =
                 "img_${DateTime.now().millisecondsSinceEpoch}_${files.length}.jpg";
             final newFile = await file.rename(
-              file.parent.path + '/' + newFileName,
+              '${file.parent.path}/$newFileName',
             );
             files.add(newFile);
           } else {

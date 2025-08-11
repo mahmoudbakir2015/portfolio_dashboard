@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio_dashboard/utils/supbase_services.dart'
@@ -26,7 +28,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   // متغيرات جديدة لتحسين التحكم
   String _userImage = '';
-  bool _isLoadingImage = false;
+  final bool _isLoadingImage = false;
   final SupabaseService supabaseService = SupabaseService();
   XFile? _pickedImage;
   File? _selectedImageFile;
@@ -207,7 +209,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         },
       );
     } catch (e) {
-      print('Error picking image: $e');
+      log('Error picking image: $e');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
