@@ -25,7 +25,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-
+  final TextEditingController _educationController = TextEditingController();
   // متغيرات جديدة لتحسين التحكم
   String _userImage = '';
   final bool _isLoadingImage = false;
@@ -55,6 +55,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _emailController.text = userData['email'] ?? '';
       _phoneController.text = userData['phone'] ?? '';
       _locationController.text = userData['location'] ?? '';
+      _educationController.text = userData['education'] ?? '';
 
       // تعيين صورة المستخدم إذا كانت موجودة
       final profileImageUrl = userData['profile_image_url'];
@@ -72,6 +73,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _emailController.text = '';
       _phoneController.text = '';
       _locationController.text = '';
+      _educationController.text =
+          '''Bachelor's degree in Computer Engineering, Kafr-Elshiekh University, Egypt''';
       _userImage =
           'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
     }
@@ -93,6 +96,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _emailController.text = userData['email'] ?? '';
         _phoneController.text = userData['phone'] ?? '';
         _locationController.text = userData['location'] ?? '';
+        _educationController.text =
+            userData['education'] ??
+            '''Bachelor's degree in Computer Engineering, Kafr-Elshiekh University, Egypt''';
 
         // تعيين صورة المستخدم إذا كانت موجودة
         final profileImageUrl = userData['profile_image_url'];
@@ -110,6 +116,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _emailController.text = '';
         _phoneController.text = '';
         _locationController.text = '';
+        _educationController.text = '';
         _userImage =
             'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
       }
@@ -135,6 +142,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       final String email = _emailController.text.trim();
       final String phone = _phoneController.text.trim();
       final String location = _locationController.text.trim();
+      final String education = _educationController.text.trim();
 
       // التحقق من أن جميع الحقول ملؤها
       if (name.isEmpty ||
@@ -160,7 +168,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         email: email,
         phone: phone,
         location: location,
-        profileImage: _selectedImageFile, // إرسال الصورة
+        profileImage: _selectedImageFile,
+        education: education, // إرسال الصورة
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -296,6 +305,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
             const SizedBox(height: 15),
             _buildTextField(
+              'Education',
+              TextInputType.text,
+              _educationController,
+            ),
+            const SizedBox(height: 15),
+            _buildTextField(
               'Email',
               TextInputType.emailAddress,
               _emailController,
@@ -417,6 +432,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _locationController.dispose();
+    _educationController.dispose();
     super.dispose();
   }
 }

@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, unnecessary_nullable_for_final_variable_declarations
 
 import 'dart:developer';
 import 'dart:io';

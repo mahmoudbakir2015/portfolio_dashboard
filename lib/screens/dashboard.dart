@@ -1,9 +1,7 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio_dashboard/screens/cv_managment.dart';
-
 import 'package:portfolio_dashboard/screens/language_screen.dart';
 import 'package:portfolio_dashboard/screens/profile_settings_screen.dart';
 import 'package:portfolio_dashboard/screens/projects_management_screen.dart';

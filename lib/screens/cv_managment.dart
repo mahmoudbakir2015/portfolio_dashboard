@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -63,7 +65,6 @@ class _CvManagementPageState extends State<CvManagementPage> {
     if (result == null) return; // لو المستخدم رجع من غير اختيار
 
     final file = File(result.files.single.path!);
-    final fileName = result.files.single.name;
 
     setState(() {
       _loading = true;

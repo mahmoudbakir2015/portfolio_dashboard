@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_nullable_for_final_variable_declarations
+
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -62,12 +64,12 @@ class SupabaseService {
     required String email,
     required String phone,
     required String location,
+    required String education, // 🔽 جديد
     File? profileImage,
   }) async {
     try {
       String? imageUrl;
       if (profileImage != null) {
-        // التحقق من حجم الصورة ونوعها قبل الرفع
         await _validateImage(profileImage);
         imageUrl = await _uploadImage(profileImage, 'profile-images/');
       }
@@ -77,7 +79,7 @@ class SupabaseService {
           .select('id, profile_image_url')
           .limit(1);
 
-      // حذف الصورة القديمة إذا وجدت
+      // حذف الصورة القديمة إذا وُجدت
       if (profileImage != null &&
           existingData.isNotEmpty &&
           existingData[0]['profile_image_url'] != null) {
@@ -91,6 +93,7 @@ class SupabaseService {
         'email': email,
         'phone': phone,
         'location': location,
+        'education': education, // ✅ أضفه هنا
         'profile_image_url': imageUrl,
         'updated_at': DateTime.now().toIso8601String(),
       };
