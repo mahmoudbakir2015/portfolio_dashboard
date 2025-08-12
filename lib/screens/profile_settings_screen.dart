@@ -1,13 +1,13 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:developer';
-
+import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:portfolio_dashboard/utils/supbase_services.dart'
-    show SupabaseService;
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:portfolio_dashboard/utils/supbase_services.dart'
+    show SupabaseService;
 import 'dart:io';
 
 class ProfileSettingsScreen extends StatefulWidget {
@@ -18,7 +18,6 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
-  // تحكمات النصوص
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _professionController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
@@ -26,12 +25,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _educationController = TextEditingController();
-  // متغيرات جديدة لتحسين التحكم
+
   String _userImage = '';
-  final bool _isLoadingImage = false;
-  final SupabaseService supabaseService = SupabaseService();
   XFile? _pickedImage;
   File? _selectedImageFile;
+
+  String _selectedCountryCode = '+20';
+
+  final SupabaseService supabaseService = SupabaseService();
 
   @override
   void initState() {
@@ -40,85 +41,83 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
 
   void _initializeData() async {
-    // تعيين قيمة افتراضية أولية
     _userImage =
-        'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-
-    // حاول الحصول على بيانات المستخدم من Supabase
-    final userData = await supabaseService.getUserData();
-
-    if (userData != null) {
-      // إذا كانت هناك بيانات، تعبئة الحقول
-      _nameController.text = userData['name'] ?? '';
-      _professionController.text = userData['profession'] ?? '';
-      _bioController.text = userData['bio'] ?? '';
-      _emailController.text = userData['email'] ?? '';
-      _phoneController.text = userData['phone'] ?? '';
-      _locationController.text = userData['location'] ?? '';
-      _educationController.text = userData['education'] ?? '';
-
-      // تعيين صورة المستخدم إذا كانت موجودة
-      final profileImageUrl = userData['profile_image_url'];
-      if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
-        _userImage = profileImageUrl;
-      } else {
-        _userImage =
-            'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-      }
-    } else {
-      // إذا لم تكن هناك بيانات، تعيين القيم الافتراضية
-      _nameController.text = '';
-      _professionController.text = '';
-      _bioController.text = '';
-      _emailController.text = '';
-      _phoneController.text = '';
-      _locationController.text = '';
-      _educationController.text =
-          '''Bachelor's degree in Computer Engineering, Kafr-Elshiekh University, Egypt''';
-      _userImage =
-          'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
-    }
-  }
-
-  // دالة تحديث البيانات
-  Future<void> _refreshData() async {
-    setState(() {});
+        'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?w=1480';
 
     try {
-      // حاول الحصول على بيانات المستخدم من Supabase
       final userData = await supabaseService.getUserData();
 
       if (userData != null) {
-        // إذا كانت هناك بيانات، تعبئة الحقول
         _nameController.text = userData['name'] ?? '';
         _professionController.text = userData['profession'] ?? '';
         _bioController.text = userData['bio'] ?? '';
         _emailController.text = userData['email'] ?? '';
         _phoneController.text = userData['phone'] ?? '';
         _locationController.text = userData['location'] ?? '';
-        _educationController.text =
-            userData['education'] ??
-            '''Bachelor's degree in Computer Engineering, Kafr-Elshiekh University, Egypt''';
+        _educationController.text = userData['education'] ?? '';
 
-        // تعيين صورة المستخدم إذا كانت موجودة
+        final phone = userData['phone'] ?? '';
+        if (phone.startsWith('+')) {
+          final code = phone.split(RegExp(r'[0-9]')).first;
+          if (code.isNotEmpty) {
+            setState(() {
+              _selectedCountryCode = code;
+            });
+          }
+        }
+
         final profileImageUrl = userData['profile_image_url'];
         if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
           _userImage = profileImageUrl;
-        } else {
-          _userImage =
-              'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
         }
       } else {
-        // إذا لم تكن هناك بيانات، تعيين القيم الافتراضية
-        _nameController.text = '';
-        _professionController.text = '';
-        _bioController.text = '';
-        _emailController.text = '';
-        _phoneController.text = '';
-        _locationController.text = '';
-        _educationController.text = '';
-        _userImage =
-            'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480';
+        _educationController.text =
+            'Bachelor\'s degree in Computer Engineering, Kafr-Elshiekh University, Egypt';
+      }
+    } catch (e) {
+      log('Error loading user data: $e');
+    } finally {
+      if (_phoneController.text.isEmpty ||
+          !_phoneController.text.startsWith(_selectedCountryCode)) {
+        _phoneController.text = _selectedCountryCode;
+      }
+      _phoneController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _phoneController.text.length),
+      );
+      setState(() {});
+    }
+  }
+
+  Future<void> _refreshData() async {
+    try {
+      final userData = await supabaseService.getUserData();
+
+      if (userData != null) {
+        setState(() {
+          _nameController.text = userData['name'] ?? '';
+          _professionController.text = userData['profession'] ?? '';
+          _bioController.text = userData['bio'] ?? '';
+          _emailController.text = userData['email'] ?? '';
+          _phoneController.text = userData['phone'] ?? '';
+          _locationController.text = userData['location'] ?? '';
+          _educationController.text = userData['education'] ?? '';
+
+          final phone = userData['phone'] ?? '';
+          if (phone.startsWith('+')) {
+            final code = phone.split(RegExp(r'[0-9]')).first;
+            if (code.isNotEmpty) {
+              _selectedCountryCode = code;
+            }
+          }
+
+          final profileImageUrl = userData['profile_image_url'];
+          if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
+            _userImage = profileImageUrl; // تحديث رابط الصورة
+            _pickedImage =
+                null; // مسح أي صورة مختارة محليًا عشان يظهر رابط الـ Network
+            _selectedImageFile = null;
+          }
+        });
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,14 +127,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error refreshing data: $e')));
-    } finally {
-      setState(() {});
     }
   }
 
   Future<void> _saveProfileChanges() async {
     try {
-      // استخراج القيم من الحقول
       final String name = _nameController.text.trim();
       final String profession = _professionController.text.trim();
       final String bio = _bioController.text.trim();
@@ -144,23 +140,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       final String location = _locationController.text.trim();
       final String education = _educationController.text.trim();
 
-      // التحقق من أن جميع الحقول ملؤها
       if (name.isEmpty ||
           profession.isEmpty ||
           bio.isEmpty ||
           email.isEmpty ||
           phone.isEmpty ||
-          location.isEmpty ||
-          _selectedImageFile == null) {
+          location.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill all fields and select an image.'),
-          ),
+          const SnackBar(content: Text('Please fill all fields.')),
         );
-        return; // لا نرسل البيانات إذا كانت هناك حقول فارغة أو لم يتم اختيار صورة
+        return;
       }
 
-      // إرسال البيانات مع الصورة إذا تم اختيارها
       await supabaseService.saveUserData(
         name: name,
         profession: profession,
@@ -168,8 +159,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         email: email,
         phone: phone,
         location: location,
+        education: education,
         profileImage: _selectedImageFile,
-        education: education, // إرسال الصورة
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -182,13 +173,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
-  // دالة لاختيار الصورة من المعرض أو الكاميرا
   Future<void> _pickImageWithOptions() async {
     try {
-      // طلب الإذن
       await _requestPermissions();
-
-      // عرض نافذة اختيار
       await showModalBottomSheet(
         context: context,
         builder: (BuildContext context) {
@@ -225,7 +212,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
-  // طلب الأذونات
   Future<void> _requestPermissions() async {
     if (Platform.isAndroid) {
       await Permission.storage.request();
@@ -236,7 +222,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
-  // اختيار من المعرض
   Future<void> _pickImageFromGallery() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -248,7 +233,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       setState(() {
         _pickedImage = image;
         _userImage = image.path;
-        _selectedImageFile = File(image.path); // حفظ الملف للاستخدام لاحقاً
+        _selectedImageFile = File(image.path);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image selected from gallery!')),
@@ -256,7 +241,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
-  // اختيار من الكاميرا
   Future<void> _pickImageFromCamera() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -268,7 +252,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       setState(() {
         _pickedImage = image;
         _userImage = image.path;
-        _selectedImageFile = File(image.path); // حفظ الملف للاستخدام لاحقاً
+        _selectedImageFile = File(image.path);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Photo taken successfully!')),
@@ -289,11 +273,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             const SizedBox(height: 20),
             _buildProfileImage(),
             const SizedBox(height: 20),
+            Text(
+              'You should choose a profile image every time you open the app because it will be uploaded to Supabase:it save null if you do not choose an image.',
+
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.red),
+            ),
+            const SizedBox(height: 20),
             _buildTextField('Full Name', TextInputType.text, _nameController),
             const SizedBox(height: 15),
             _buildTextField(
               'Profession',
-              TextInputType.multiline,
+              TextInputType.text,
               _professionController,
             ),
             const SizedBox(height: 15),
@@ -316,7 +306,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               _emailController,
             ),
             const SizedBox(height: 15),
-            _buildTextField('Phone', TextInputType.number, _phoneController),
+            _buildPhoneField(),
             const SizedBox(height: 15),
             _buildTextField(
               'Location',
@@ -343,25 +333,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               border: Border.all(color: Colors.blue, width: 3),
             ),
             child: ClipOval(
-              child: _isLoadingImage
-                  ? const CircularProgressIndicator()
-                  : _pickedImage != null
+              child: _pickedImage != null
                   ? Image.file(File(_pickedImage!.path), fit: BoxFit.cover)
                   : _userImage.isNotEmpty
-                  ? Image.network(
-                      _userImage,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.network(
-                          'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480',
-                          fit: BoxFit.cover,
-                        );
-                      },
-                    )
-                  : Image.network(
-                      'https://img.freepik.com/free-photo/young-bearded-man-with-striped-shirt_273609-5677.jpg?t=st=1754780414~exp=1754784014~hmac=bd64b4855057a199653a9d978b1ec6b912d5888c56d6740cb196670bf6c2a6e9&w=1480',
-                      fit: BoxFit.cover,
-                    ),
+                  ? Image.network(_userImage, fit: BoxFit.cover)
+                  : const Icon(Icons.person, size: 80),
             ),
           ),
           Positioned(
@@ -372,7 +348,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               child: Container(
                 width: 30,
                 height: 30,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.blue,
                 ),
@@ -404,6 +380,57 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
+  Widget _buildPhoneField() {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () {
+            showCountryPicker(
+              context: context,
+              showPhoneCode: true,
+              onSelect: (country) {
+                setState(() {
+                  _selectedCountryCode = '+${country.phoneCode}';
+                  _phoneController.text = '+${country.phoneCode}';
+                  _phoneController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _phoneController.text.length),
+                  );
+                });
+              },
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.grey[50],
+            ),
+            child: Text(
+              _selectedCountryCode,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSaveButton(String label, VoidCallback onPressed) {
     return ElevatedButton(
       onPressed: onPressed,
@@ -425,7 +452,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   @override
   void dispose() {
-    // تحرير الذاكرة عند إغلاق الشاشة
     _nameController.dispose();
     _professionController.dispose();
     _bioController.dispose();
