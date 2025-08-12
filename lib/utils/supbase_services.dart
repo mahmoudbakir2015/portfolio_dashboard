@@ -423,4 +423,115 @@ class SupabaseService {
       throw Exception('Failed to fetch skills: $e');
     }
   }
+
+  /// رفع ملف PDF إلى Bucket باسم 'documents'
+  /// ويعيد الـ Public URL
+  Future<void> uploadAndReplaceCv(File pdfFile) async {
+    try {
+      await _deleteOldCvPdf();
+      final ext = path.extension(pdfFile.path).toLowerCase();
+      if (ext != '.pdf') throw Exception('PDF فقط مسموح');
+
+      const maxFileSize = 10 * 1024 * 1024;
+      if (await pdfFile.length() > maxFileSize) {
+        throw Exception('الملف يجب أن يكون أقل من 10MB');
+      }
+
+      final originalName = path.basename(pdfFile.path);
+      final cleanedName = originalName.replaceAll(
+        RegExp(r'[^a-zA-Z0-9\-_.]'),
+        '_',
+      );
+      final fileName =
+          'cv_${DateTime.now().millisecondsSinceEpoch}_$cleanedName';
+      final filePath = 'documents/$fileName';
+
+      // رفع مع upsert
+      await _client.storage
+          .from('documents')
+          .upload(
+            filePath,
+            pdfFile,
+            fileOptions: FileOptions(
+              contentType: 'application/pdf',
+              cacheControl: '3600',
+              upsert: true,
+            ),
+          );
+
+      final fileUrl = _client.storage.from('documents').getPublicUrl(filePath);
+
+      // حذف القديم من الجدول
+      await _client.from('cv_files').delete().neq('id', 0);
+
+      // حفظ الجديد
+      await _client.from('cv_files').insert({
+        'file_name': originalName,
+        'file_url': fileUrl,
+        'uploaded_at': DateTime.now().toIso8601String(),
+      });
+    } on PostgrestException catch (e) {
+      log('Database error: ${e.message}');
+      throw Exception('خطأ في قاعدة البيانات: ${e.message}');
+    } on StorageException catch (e) {
+      log('Storage error: ${e.message}');
+      throw Exception('خطأ في رفع الملف: ${e.message}');
+    } catch (e) {
+      log('Unexpected error uploading CV: $e');
+      throw Exception('فشل في رفع الـ CV: $e');
+    }
+  }
+
+  Future<void> _deleteOldCvPdf() async {
+    try {
+      final cvData = await getLatestCv();
+      if (cvData == null || cvData['file_url'] == null) return;
+
+      final String oldUrl = cvData['file_url'];
+
+      // ✅ تأكد أن الـ URL يحتوي على /documents/
+      if (!oldUrl.contains('/documents/')) {
+        log('Invalid CV URL format: $oldUrl');
+        return;
+      }
+
+      final String? encodedPath = oldUrl.split('/documents/').last;
+      if (encodedPath == null || encodedPath.isEmpty) return;
+
+      final String path = Uri.decodeComponent(encodedPath);
+
+      if (path.isNotEmpty) {
+        await _client.storage.from('documents').remove([path]);
+        log('✅ تم حذف الـ PDF القديم: $path');
+      }
+    } on StorageException catch (e) {
+      log('❌ Storage error deleting old CV: ${e.message}');
+    } catch (e) {
+      log('❌ Failed to delete old CV: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getLatestCv() async {
+    try {
+      final response = await _client
+          .from('cv_files')
+          .select('file_name, file_url, uploaded_at')
+          .order('uploaded_at', ascending: false)
+          .limit(1);
+
+      if (response.isEmpty) return null;
+      return response[0];
+    } on PostgrestException catch (e) {
+      log('Database error fetching CV: ${e.message}');
+      return null;
+    } catch (e) {
+      log('Unexpected error fetching CV: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getCvUrl() async {
+    final cv = await getLatestCv();
+    return cv?['file_url'] as String?;
+  }
 }

@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:portfolio_dashboard/screens/cv_managment.dart';
 
 import 'package:portfolio_dashboard/screens/language_screen.dart';
 import 'package:portfolio_dashboard/screens/profile_settings_screen.dart';
@@ -166,6 +167,16 @@ class _DashboardScreenState extends State<DashboardScreen>
               Navigator.pop(context);
             },
           ),
+          _buildDrawerItem(
+            icon: Icons.picture_as_pdf,
+            title: 'My CV',
+            onTap: () {
+              setState(() {
+                _selectedIndex = 4;
+              });
+              Navigator.pop(context);
+            },
+          ),
         ],
       ),
     );
@@ -193,6 +204,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         return const SkillsManagementScreen();
       case 3:
         return const SpokenLanguagesScreen();
+      case 4:
+        return const CvManagementPage();
 
       default:
         return const ProfileSettingsScreen();
